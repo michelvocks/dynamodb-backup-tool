@@ -13,26 +13,30 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
+const (
+	maxPutItems = 25
+)
+
 func main() {
 	// Input parameters
 	dataFolder := flag.String("data", "data", "path to the data folder")
 	tableName := flag.String("table", "", "table name to export")
-	mode := flag.String("mode", "export", "export or import that should be executed")
+	mode := flag.String("mode", "export", "export or restore that should be executed")
 	flag.Parse()
 
 	switch *mode {
 	case "export":
 		// Export data
 		exportData(*tableName, *dataFolder)
-	case "import":
-		// Import data
-		importData(*tableName, *dataFolder)
+	case "restore":
+		// restore data
+		restoreData(*tableName, *dataFolder)
 	default:
 		panic(errors.New("mode is unknown"))
 	}
 }
 
-func importData(tableName, dataFolder string) {
+func restoreData(tableName, dataFolder string) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		// enable shared config support.
 		SharedConfigState: session.SharedConfigEnable,
@@ -66,7 +70,7 @@ func importData(tableName, dataFolder string) {
 
 		// Iterate items
 		ri := map[string][]*dynamodb.WriteRequest{}
-		for _, v := range items {
+		for id, v := range items {
 			pq := &dynamodb.PutRequest{
 				Item: v,
 			}
@@ -74,17 +78,34 @@ func importData(tableName, dataFolder string) {
 			ri[tableName] = append(ri[tableName], &dynamodb.WriteRequest{
 				PutRequest: pq,
 			})
+
+			if (id+1)%maxPutItems == 0 {
+				// Reaching max items. We have to send it now
+				batchWriteItems(ri, svc)
+
+				// We are not at the end
+				ri = nil
+				if id < len(items)-1 {
+					ri = map[string][]*dynamodb.WriteRequest{}
+				}
+			}
 		}
 
-		// Insert items into dynamodb
-		input := &dynamodb.BatchWriteItemInput{
-			RequestItems: ri,
+		// Write last items
+		if ri != nil {
+			batchWriteItems(ri, svc)
 		}
-		result, err := svc.BatchWriteItem(input)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(result)
+	}
+}
+
+func batchWriteItems(ri map[string][]*dynamodb.WriteRequest, svc *dynamodb.DynamoDB) {
+	// Insert items into dynamodb
+	input := &dynamodb.BatchWriteItemInput{
+		RequestItems: ri,
+	}
+	_, err := svc.BatchWriteItem(input)
+	if err != nil {
+		panic(err)
 	}
 }
 
