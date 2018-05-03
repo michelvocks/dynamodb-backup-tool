@@ -1,0 +1,8 @@
+builds:
+  - binary: dynamodb-backup-tool
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64

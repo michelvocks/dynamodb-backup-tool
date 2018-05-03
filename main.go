@@ -15,9 +15,9 @@ import (
 
 func main() {
 	// Input parameters
-	dataFolder := flag.String("dump", "data", "path to the output folder")
+	dataFolder := flag.String("data", "data", "path to the data folder")
 	tableName := flag.String("table", "", "table name to export")
-	mode := flag.String("mode", "export", "export or import for action that should be executed")
+	mode := flag.String("mode", "export", "export or import that should be executed")
 	flag.Parse()
 
 	switch *mode {
