@@ -19,5 +19,5 @@ dynamodb-backup-tool -mode "export" -table "MyDynamoDBTable" -data "/path/to/dat
 
 Import of table:
 ```bash
-dynamodb-backup-tool -mode "import" -table "MyDynamoDBTable" -data "/path/to/data/folder"
+dynamodb-backup-tool -mode "restore" -table "MyDynamoDBTable" -data "/path/to/data/folder"
 ```
